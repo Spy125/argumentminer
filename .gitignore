@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.env
+*.env
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+env/
+*.pt
+*.pkl
+*.faiss
