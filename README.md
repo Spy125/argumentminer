@@ -38,15 +38,28 @@ Output: a terminal table of units and fallacies, plus `argument_graph.html`.
 
 ---
 
+## Testing
+
+Install the dependencies and run the suite:
+
+```bash
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt pytest   # Linux/macOS: .venv/bin/pip
+.venv/Scripts/python -m pytest -v
+```
+
+Exercise the CLI directly with `python -m argumentminer.cli --help`.
+
+---
+
 ## Project structure
 
 ```
 argumentminer/
 ├── argumentminer/
 │   ├── segmenter.py    # argument unit classification
-│   ├── relation.py     # support/attack detection
 │   ├── fallacy.py      # 8 fallacy pattern detectors
-│   ├── graph.py        # NetworkX graph construction
+│   ├── graph.py        # support/attack relations, NetworkX graph construction
 │   ├── visualiser.py   # Pyvis HTML rendering
 │   └── cli.py
 └── tests/
