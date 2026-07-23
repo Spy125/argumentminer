@@ -19,8 +19,8 @@ app     = typer.Typer(name="argumentminer", add_completion=False)
 console = Console()
 
 
-@app.command("analyse")
-def analyse(
+@app.command("mine")
+def mine(
     text: str   = typer.Argument(None, help="Text to analyse (or use --file)"),
     file: Path  = typer.Option(None, "--file", "-f", help="Read text from file"),
     html_out: Path = typer.Option(None, "--html", help="Save HTML graph"),
@@ -68,6 +68,31 @@ def analyse(
         }
         json_out.write_text(json.dumps(data, indent=2))
         console.print(f"JSON saved -> {json_out}")
+
+
+@app.command("fallacies")
+def fallacies(
+    text: str  = typer.Argument(None, help="Text to scan (or use --file)"),
+    file: Path = typer.Option(None, "--file", "-f", help="Read text from file"),
+):
+    """List the logical fallacies detected in the text, without building a graph."""
+    if file:
+        text = file.read_text(encoding="utf-8")
+    if not text:
+        console.print("[red]Provide text as argument or with --file[/red]")
+        raise typer.Exit(1)
+
+    detected = FallacyDetector().detect_unique(text)
+    if not detected:
+        console.print("[green]No obvious fallacies detected.[/green]")
+        return
+    table = Table(title="Detected Fallacies")
+    table.add_column("Fallacy")
+    table.add_column("Matched Text")
+    table.add_column("Confidence")
+    for f in detected:
+        table.add_row(f.name, f.matched_text, f"{f.confidence:.0%}")
+    console.print(table)
 
 
 if __name__ == "__main__":

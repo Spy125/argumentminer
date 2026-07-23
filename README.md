@@ -24,9 +24,13 @@ pip install -r requirements.txt
 python -m argumentminer.cli mine "text to analyse"
 # or from a file:
 python -m argumentminer.cli mine --file debate.txt
+
+# just list the fallacies, without building a graph:
+python -m argumentminer.cli fallacies "text to analyse"
 ```
 
-Output: a terminal table of units and fallacies, plus `argument_graph.html`.
+`mine` prints a terminal table of argument units and fallacies and can save an
+HTML graph with `--html`. `fallacies` runs only the fallacy detectors.
 
 ---
 
