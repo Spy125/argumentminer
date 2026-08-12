@@ -3,9 +3,27 @@
 from __future__ import annotations
 
 import json
+from html import escape as _escape
 from pathlib import Path
 
 from argumentminer.graph import ArgumentGraph, RelationType
+
+
+def _js_json(payload) -> str:
+    """Serialise for embedding inside a <script> block.
+
+    An HTML parser looks for the literal "</script" before any JavaScript runs,
+    so a document containing that text would close the block early and the rest
+    of the analysed text would be parsed as markup. json.dumps does not escape
+    the slash, so it has to be escaped here. The ampersand and angle brackets
+    are escaped for the same reason in the HTML-comment case.
+    """
+    return (
+        json.dumps(payload)
+        .replace("&", "\\u0026")
+        .replace("<", "\\u003c")
+        .replace(">", "\\u003e")
+    )
 
 
 def render_text_tree(graph: ArgumentGraph) -> str:
@@ -37,8 +55,12 @@ def render_text_tree(graph: ArgumentGraph) -> str:
 
 def render_html(graph: ArgumentGraph, title: str = "Argument Graph",
                 output_path: Path = None) -> str:
-    """Render a self-contained HTML page with an interactive D3 graph."""
-    graph_data = json.dumps(graph.to_dict())
+    """Render an HTML page with an interactive D3 graph.
+
+    D3 is loaded from a CDN, so the page needs network access to draw anything.
+    """
+    graph_data = _js_json(graph.to_dict())
+    title = _escape(title)
 
     html = f"""<!DOCTYPE html>
 <html><head>
@@ -85,8 +107,14 @@ const node = svg.append("g").selectAll("circle")
     .on("end",   e => {{ if(!e.active) sim.alphaTarget(0); e.subject.fx=null; e.subject.fy=null; }}));
 
 node.on("click", (e,d) => {{
-  document.getElementById("detail").innerHTML =
-    "<strong>" + d.type.toUpperCase() + "</strong>: " + d.text;
+  // Built as nodes rather than assigned through innerHTML: d.text is analysed
+  // text, and innerHTML would parse any markup inside it as live HTML.
+  const detail = document.getElementById("detail");
+  detail.textContent = "";
+  const label = document.createElement("strong");
+  label.textContent = d.type.toUpperCase() + ": ";
+  detail.appendChild(label);
+  detail.appendChild(document.createTextNode(d.text));
 }});
 
 sim.on("tick", () => {{
