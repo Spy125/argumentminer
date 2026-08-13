@@ -43,6 +43,7 @@ def mine(
     console.print("\n[bold]Argument Structure:[/bold]")
     console.print(render_text_tree(graph))
 
+    fallacies = []
     if not no_fallacies:
         fallacies = detector.detect_unique(text)
         if fallacies:
@@ -57,7 +58,10 @@ def mine(
             console.print("[green]No obvious fallacies detected.[/green]")
 
     if html_out:
-        render_html(graph, title="ArgumentMiner Analysis", output_path=html_out)
+        # The saved page carries whatever the run found, so it stands on its
+        # own; --no-fallacies leaves the list empty and the section is dropped.
+        render_html(graph, title="ArgumentMiner Analysis", output_path=html_out,
+                    fallacies=fallacies)
         console.print(f"HTML saved -> {html_out}")
 
     if json_out:

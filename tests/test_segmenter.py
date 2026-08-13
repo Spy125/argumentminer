@@ -1,5 +1,6 @@
 """Tests for segmentation offsets, signal precision, and HTML rendering."""
 
+import json
 from html import escape
 
 import pytest
@@ -110,5 +111,34 @@ class TestHtmlRendering:
     def test_page_still_carries_the_graph_data(self, segmenter):
         text = "We must act because the evidence is overwhelming."
         page = render_html(build_graph(segmenter.segment(text)))
-        assert "const data = {" in page
         assert "evidence is overwhelming" in page
+        # The embedded block has to be JSON the page can actually parse, which
+        # is the part that matters; how it is spelled into the document is not.
+        payload = json.loads(self._data_block(page))
+        assert payload["nodes"], "the graph carried no nodes"
+        assert any("evidence is overwhelming" in n["text"] for n in payload["nodes"])
+
+    def test_the_page_needs_no_network_to_draw(self, segmenter):
+        """It used to load D3 from a CDN, so a saved report drew nothing offline."""
+        page = render_html(build_graph(segmenter.segment("We must act because it is late.")))
+        assert "http://" not in page
+        assert "https://" not in page
+        assert "cdn" not in page.lower()
+        # Nothing may be fetched at view time either.
+        for fetcher in ("fetch(", "XMLHttpRequest", "importScripts", "<script src"):
+            assert fetcher not in page
+
+    def test_fallacies_reach_the_page_when_given(self, segmenter):
+        from argumentminer.fallacy import FallacyDetector
+        text = "You should agree because everyone knows this is how it works."
+        found = FallacyDetector().detect_unique(text)
+        page = render_html(build_graph(segmenter.segment(text)), fallacies=found)
+        payload = json.loads(
+            page.split('id="fallacies" type="application/json">')[1].split("</script>")[0])
+        assert len(payload) == len(found)
+        # The caveat travels with them; a bare list reads as a verdict.
+        assert "not judgements about the argument" in page
+
+    @staticmethod
+    def _data_block(page: str) -> str:
+        return page.split('id="data" type="application/json">')[1].split("</script>")[0]
